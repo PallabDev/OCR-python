@@ -1,0 +1,22 @@
+services:
+  ocr-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paddleocr_api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Live reload app and public directories
+      - ./app:/app/app
+      - ./public:/app/public
+      # Persist PaddleOCR / PaddleX downloaded model weights across container restarts
+      - paddle_cache:/root/.paddleocr
+      - paddlepaddle_cache:/root/.paddlepaddle
+      - paddlex_cache:/root/.paddlex
+    restart: unless-stopped
+
+volumes:
+  paddle_cache:
+  paddlepaddle_cache:
+  paddlex_cache:

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaddleOCR Studio | Visual Text Extractor & Comparison</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #090d16;
+            --bg-secondary: #0f172a;
+            --card-bg: rgba(17, 24, 39, 0.75);
+            --card-border: rgba(255, 255, 255, 0.09);
+            --card-border-hover: rgba(99, 102, 241, 0.4);
+            --primary: #6366f1;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            --primary-glow: rgba(99, 102, 241, 0.35);
+            --accent-cyan: #06b6d4;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.12);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1.25rem 4rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient light */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -250px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(139, 92, 246, 0.08) 40%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.9rem;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #a5b4fc;
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 2.75rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            background: rgba(15, 23, 42, 0.4);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.06);
+            box-shadow: 0 0 25px var(--primary-glow);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon-wrap {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            transition: var(--transition);
+        }
+
+        .upload-zone:hover .upload-icon-wrap {
+            transform: scale(1.08);
+            background: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .upload-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .upload-desc {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+
+        .paste-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0.3rem 0.7rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .kbd {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* Comparison Workspace (Side by Side) */
+        .workspace-grid {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 480px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Original Image Viewer */
+        .image-viewer-container {
+            flex: 1;
+            background: #040711;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            position: relative;
+            min-height: 380px;
+            max-height: 600px;
+            padding: 1rem;
+        }
+
+        .image-preview-full {
+            max-width: 100%;
+            max-height: 560px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: var(--transition);
+        }
+
+        .image-meta-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding-top: 0.25rem;
+        }
+
+        /* Buttons & Actions */
+        .btn-extract {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            background: var(--primary-gradient);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 25px -5px var(--primary-glow);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-extract:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+            filter: brightness(1.08);
+        }
+
+        .btn-extract:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.45rem 0.85rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: var(--transition);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #f87171;
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: var(--transition);
+        }
+
+        .btn-danger-outline:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+        }
+
+        /* Extracted Text Viewer */
+        .text-output-container {
+            flex: 1;
+            background: #040711;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            overflow-y: auto;
+            max-height: 600px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .empty-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+            margin: auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-badge {
+            background: var(--success-bg);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            padding: 0.25rem 0.65rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Detailed Lines list */
+        .lines-accordion {
+            margin-top: 1.5rem;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem 1.5rem;
+            display: none;
+        }
+
+        .lines-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.85rem;
+        }
+
+        .line-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.88rem;
+        }
+
+        .line-conf {
+            font-size: 0.76rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1e293b;
+            color: #fff;
+            padding: 0.85rem 1.4rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 0.9rem;
+            font-weight: 600;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: rgba(16, 185, 129, 0.4); }
+        .toast.error { border-color: rgba(239, 68, 68, 0.4); background: #2b1414; }
+
+        @media (max-width: 900px) {
+            .workspace-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2rem; }
+            .container { padding: 0 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="badge-pill">
+                <span class="badge-dot"></span>
+                <span>PaddleOCR (English & Orientation Classifier)</span>
+            </div>
+            <h1>Visual Text Extractor</h1>
+            <p class="subtitle">Drop, browse, or paste an image to inspect the original alongside high-accuracy extracted text.</p>
+        </header>
+
+        <!-- Upload Dropzone -->
+        <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon-wrap">
+                <!-- Tabler: cloud-upload -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1" />
+                    <path d="M9 15l3 -3l3 3" />
+                    <path d="M12 12l0 9" />
+                </svg>
+            </div>
+            <div>
+                <div class="upload-title">Drop your image here, or <span style="color: var(--primary); text-decoration: underline;">browse</span></div>
+                <div class="upload-desc" style="margin-top: 0.25rem;">Supports PNG, JPG, JPEG, WEBP, BMP</div>
+            </div>
+            <div class="paste-hint">
+                <!-- Tabler: clipboard -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
+                    <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+                </svg>
+                <span>Or paste screenshot with</span>
+                <span class="kbd">Ctrl</span> + <span class="kbd">V</span>
+            </div>
+            <input type="file" id="file-input" accept="image/*">
+        </div>
+
+        <!-- Side-by-Side Comparison Workspace -->
+        <div class="workspace-grid" id="workspace-grid">
+            
+            <!-- LEFT PANEL: Readable Original Image -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <!-- Tabler: photo -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M15 8h.01" />
+                            <path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z" />
+                            <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" />
+                            <path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" />
+                        </svg>
+                        Original Image
+                    </span>
+                    <button type="button" class="btn-danger-outline" onclick="resetFileSelection()">
+                        <!-- Tabler: refresh -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                            <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                        </svg>
+                        Change Image
+                    </button>
+                </div>
+
+                <div class="image-viewer-container" id="image-viewer">
+                    <img id="image-preview" class="image-preview-full" alt="Original Image">
+                </div>
+
+                <div class="image-meta-bar">
+                    <span id="img-meta-name">image.png</span>
+                    <span id="img-meta-size">0 KB</span>
+                </div>
+
+                <button type="button" class="btn-extract" id="btn-extract" onclick="handleExtractOCR()">
+                    <span class="spinner" id="btn-spinner"></span>
+                    <!-- Tabler: sparkles / bolt -->
+                    <svg id="btn-extract-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0z" />
+                    </svg>
+                    <span id="btn-label">Extract Text Now</span>
+                </button>
+            </div>
+
+            <!-- RIGHT PANEL: Extracted Text -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <!-- Tabler: file-text -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                            <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                            <path d="M9 9l1 0" />
+                            <path d="M9 13l6 0" />
+                            <path d="M9 17l6 0" />
+                        </svg>
+                        Extracted Text
+                    </span>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span class="stats-badge" id="stat-accuracy" style="display: none;">99% Accuracy</span>
+                        <button type="button" class="btn-secondary" id="btn-copy" onclick="copyExtractedText()">
+                            <!-- Tabler: copy -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z" />
+                                <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" />
+                            </svg>
+                            <span id="copy-label">Copy</span>
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="downloadTextFile()">
+                            <!-- Tabler: download -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                                <path d="M7 11l5 5l5 -5" />
+                                <path d="M12 4l0 12" />
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-output-container" id="text-output">
+                    <div class="empty-placeholder" id="output-placeholder">
+                        <!-- Tabler: scan -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted)">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M4 7v-1a2 2 0 0 1 2 -2h2" />
+                            <path d="M4 17v1a2 2 0 0 0 2 2h2" />
+                            <path d="M16 4h2a2 2 0 0 1 2 2v1" />
+                            <path d="M16 20h2a2 2 0 0 0 2 -2v-1" />
+                            <path d="M4 12h16" />
+                        </svg>
+                        <span>Click <strong>"Extract Text Now"</strong> to recognize text from the image</span>
+                    </div>
+                </div>
+
+                <div class="image-meta-bar">
+                    <span id="stat-lines">0 lines detected</span>
+                    <span id="stat-chars">0 characters</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collapsible Detailed Breakdown -->
+        <details class="lines-accordion" id="lines-accordion">
+            <summary style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                <!-- Tabler: list-details -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M13 5h8" />
+                    <path d="M13 9h5" />
+                    <path d="M13 15h8" />
+                    <path d="M13 19h5" />
+                    <path d="M3 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+                    <path d="M3 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+                </svg>
+                View Line-by-Line Breakdown (<span id="details-count">0</span> items)
+            </summary>
+            <div class="lines-list" id="lines-breakdown"></div>
+        </details>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let selectedFile = null;
+        let lastExtractedResult = null;
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const workspaceGrid = document.getElementById('workspace-grid');
+        const imagePreview = document.getElementById('image-preview');
+        const imgMetaName = document.getElementById('img-meta-name');
+        const imgMetaSize = document.getElementById('img-meta-size');
+        const btnExtract = document.getElementById('btn-extract');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const btnExtractIcon = document.getElementById('btn-extract-icon');
+        const btnLabel = document.getElementById('btn-label');
+        const textOutput = document.getElementById('text-output');
+        const outputPlaceholder = document.getElementById('output-placeholder');
+        const statAccuracy = document.getElementById('stat-accuracy');
+        const statLines = document.getElementById('stat-lines');
+        const statChars = document.getElementById('stat-chars');
+        const linesAccordion = document.getElementById('lines-accordion');
+        const linesBreakdown = document.getElementById('lines-breakdown');
+        const detailsCount = document.getElementById('details-count');
+        const toast = document.getElementById('toast');
+
+        // Drag & Drop
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('dragover');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                handleFileSelected(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleFileSelected(e.target.files[0]);
+            }
+        });
+
+        // Global Paste (Ctrl + V)
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || window.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    handleFileSelected(blob, 'pasted-image.png');
+                    showToast('Image pasted from clipboard!', 'success');
+                    break;
+                }
+            }
+        });
+
+        function formatBytes(bytes, decimals = 1) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function handleFileSelected(file, customName) {
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select a valid image file.', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            const fileName = customName || file.name || 'image.png';
+
+            imgMetaName.textContent = fileName;
+            imgMetaSize.textContent = formatBytes(file.size);
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                dropZone.style.display = 'none';
+                workspaceGrid.style.display = 'grid';
+
+                // Reset text output to placeholder
+                textOutput.innerHTML = '';
+                textOutput.appendChild(outputPlaceholder);
+                statAccuracy.style.display = 'none';
+                statLines.textContent = '0 lines detected';
+                statChars.textContent = '0 characters';
+                linesAccordion.style.display = 'none';
+
+                // Auto-trigger extraction
+                handleExtractOCR();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetFileSelection() {
+            selectedFile = null;
+            lastExtractedResult = null;
+            fileInput.value = '';
+            dropZone.style.display = 'flex';
+            workspaceGrid.style.display = 'none';
+            linesAccordion.style.display = 'none';
+            imagePreview.src = '';
+        }
+
+        async function handleExtractOCR() {
+            if (!selectedFile) {
+                showToast('No image selected.', 'error');
+                return;
+            }
+
+            setLoading(true);
+
+            const formData = new FormData();
+            formData.append('file', selectedFile, selectedFile.name || 'image.png');
+
+            try {
+                const response = await fetch('/ocr', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Server error (${response.status})`);
+                }
+
+                const data = await response.json();
+                lastExtractedResult = data;
+                displayResults(data);
+                showToast('Text extracted successfully!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'Failed to extract text.', 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function displayResults(data) {
+            textOutput.innerHTML = '';
+
+            if (data.text && data.text.trim().length > 0) {
+                textOutput.textContent = data.text;
+            } else {
+                textOutput.innerHTML = '<div class="empty-placeholder"><span>No text detected in this image.</span></div>';
+            }
+
+            // Stats
+            const totalLines = data.total_lines || 0;
+            const totalChars = (data.text || '').length;
+            statLines.textContent = `${totalLines} lines detected`;
+            statChars.textContent = `${totalChars} characters`;
+
+            // Calculate accuracy badge
+            if (data.lines && data.lines.length > 0) {
+                const sum = data.lines.reduce((acc, curr) => acc + (curr.confidence || 0), 0);
+                const avgConf = ((sum / data.lines.length) * 100).toFixed(1);
+                statAccuracy.textContent = `${avgConf}% Accuracy`;
+                statAccuracy.style.display = 'inline-block';
+
+                // Line breakdown
+                detailsCount.textContent = totalLines;
+                linesBreakdown.innerHTML = '';
+                data.lines.forEach((line, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'line-item';
+                    const confPct = Math.round((line.confidence || 0) * 100);
+                    item.innerHTML = `
+                        <span><strong>#${idx + 1}</strong> &nbsp; ${escapeHtml(line.text)}</span>
+                        <span class="line-conf">${confPct}%</span>
+                    `;
+                    linesBreakdown.appendChild(item);
+                });
+                linesAccordion.style.display = 'block';
+            } else {
+                statAccuracy.style.display = 'none';
+                linesAccordion.style.display = 'none';
+            }
+        }
+
+        function setLoading(isLoading) {
+            btnExtract.disabled = isLoading;
+            if (isLoading) {
+                btnSpinner.style.display = 'inline-block';
+                btnExtractIcon.style.display = 'none';
+                btnLabel.textContent = 'Processing OCR...';
+            } else {
+                btnSpinner.style.display = 'none';
+                btnExtractIcon.style.display = 'inline-block';
+                btnLabel.textContent = 'Re-extract Text';
+            }
+        }
+
+        function copyExtractedText() {
+            if (!lastExtractedResult || !lastExtractedResult.text) {
+                showToast('No text to copy.', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(lastExtractedResult.text).then(() => {
+                const copyLabel = document.getElementById('copy-label');
+                copyLabel.textContent = 'Copied!';
+                showToast('Copied to clipboard!', 'success');
+                setTimeout(() => {
+                    copyLabel.textContent = 'Copy';
+                }, 2000);
+            }).catch(() => {
+                showToast('Failed to copy text.', 'error');
+            });
+        }
+
+        function downloadTextFile() {
+            if (!lastExtractedResult || !lastExtractedResult.text) {
+                showToast('No text to download.', 'error');
+                return;
+            }
+
+            const blob = new Blob([lastExtractedResult.text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ocr_result_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
